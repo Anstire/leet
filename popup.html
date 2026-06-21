@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LeetCode Companion</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <img src="icon.png" alt="Logo" class="header-logo">
+        <h1>LeetCode Companion</h1>
+      </div>
+      <span class="active-badge" id="active-tab-indicator">Active</span>
+    </header>
+
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-tab="tab-notes">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>
+        Notes
+      </button>
+      <button class="tab-btn" data-tab="tab-ai">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"></path></svg>
+        AI Coach
+      </button>
+      <button class="tab-btn" data-tab="tab-history">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"></path><circle cx="12" cy="12" r="9"></circle></svg>
+        History
+      </button>
+      <button class="tab-btn" data-tab="tab-settings">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        Settings
+      </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content-area">
+      <!-- Tab 1: Notes -->
+      <section id="tab-notes" class="tab-pane active">
+        <!-- Detection Notice / Error -->
+        <div id="detection-warning" class="info-alert hide">
+          Please open a LeetCode problem page to use this extension.
+        </div>
+
+        <div id="active-problem-info" class="problem-card">
+          <div class="problem-header-row">
+            <h2 id="problem-title">Loading Problem...</h2>
+            <span id="problem-difficulty" class="diff-badge difficulty-medium">Medium</span>
+          </div>
+          <div id="problem-tags" class="tag-container">
+            <!-- Dynamically populated tags -->
+          </div>
+        </div>
+
+        <!-- Timer Panel -->
+        <div class="timer-section">
+          <div class="timer-label">Time Spent</div>
+          <div class="timer-display-row">
+            <div id="timer-text" class="timer-text">00:00:00</div>
+            <div class="timer-controls">
+              <button id="btn-timer-toggle" class="timer-btn primary" title="Pause Timer">
+                <svg id="svg-pause" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                <svg id="svg-play" class="hide" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+              </button>
+              <button id="btn-timer-reset" class="timer-btn" title="Reset Timer">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Complexity Panel -->
+        <div class="complexity-section">
+          <div class="dropdown-group">
+            <label for="select-time-complexity">Time Complexity</label>
+            <select id="select-time-complexity">
+              <option value="">Select Big-O</option>
+              <option value="O(1)">O(1) - Constant</option>
+              <option value="O(log N)">O(log N) - Logarithmic</option>
+              <option value="O(N)">O(N) - Linear</option>
+              <option value="O(N log N)">O(N log N) - Linearithmic</option>
+              <option value="O(N^2)">O(N²) - Quadratic</option>
+              <option value="O(2^N)">O(2ᴺ) - Exponential</option>
+              <option value="O(N!)">O(N!) - Factorial</option>
+            </select>
+          </div>
+          <div class="dropdown-group">
+            <label for="select-space-complexity">Space Complexity</label>
+            <select id="select-space-complexity">
+              <option value="">Select Big-O</option>
+              <option value="O(1)">O(1) - Constant</option>
+              <option value="O(log N)">O(log N) - Logarithmic</option>
+              <option value="O(N)">O(N) - Linear</option>
+              <option value="O(N^2)">O(N²) - Quadratic</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Notes Textarea -->
+        <div class="notes-section">
+          <label for="notes-editor">My Notes & Strategy</label>
+          <textarea id="notes-editor" placeholder="Write down your thought process, edge cases, and approaches here..."></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="actions-section">
+          <button id="btn-save-notes" class="btn primary-action">Save Progress</button>
+          <button id="btn-export-md" class="btn secondary-action">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Export MD
+          </button>
+        </div>
+      </section>
+
+      <!-- Tab 2: AI Coach -->
+      <section id="tab-ai" class="tab-pane">
+        <!-- API Key Warning Overlay -->
+        <div id="ai-key-warning" class="warning-overlay hide">
+          <div class="overlay-content">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <h3>Gemini API Key Required</h3>
+            <p>To chat with your AI Coach, please configure your Gemini API Key in the Settings tab.</p>
+            <button id="btn-go-to-settings" class="btn primary-action">Go to Settings</button>
+          </div>
+        </div>
+
+        <div class="ai-container">
+          <!-- Suggestion Chips -->
+          <div class="suggestion-scroll">
+            <button class="ai-chip" data-prompt="Can you give me a conceptual hint without spoiling the code?">💡 Hint</button>
+            <button class="ai-chip" data-prompt="Analyze the time and space complexity of my code.">⏱️ Analyze Complexity</button>
+            <button class="ai-chip" data-prompt="Explain my current code snippet simply.">📖 Explain Code</button>
+            <button class="ai-chip" data-prompt="What are some edge cases I should consider for this problem?">⚠️ Edge Cases</button>
+          </div>
+
+          <!-- Chat Messages Area -->
+          <div class="chat-messages" id="chat-messages-container">
+            <div class="chat-message assistant">
+              <div class="message-content">
+                Hello! I am your LeetCode AI Companion. How can I help you with today's problem? Click one of the quick suggestions above or write a message.
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input -->
+          <div class="chat-input-area">
+            <textarea id="ai-chat-input" placeholder="Ask AI Coach... (e.g. how to optimize my loop?)"></textarea>
+            <button id="btn-send-chat" class="send-btn" title="Send message">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: History -->
+      <section id="tab-history" class="tab-pane">
+        <div class="history-container">
+          <div class="history-header">
+            <h3>Saved Problems</h3>
+            <button id="btn-clear-history" class="text-danger-btn">Clear All</button>
+          </div>
+          <div id="history-list" class="history-list">
+            <!-- Dynamically populated items -->
+            <div class="no-history">No saved problems found. Click "Save Progress" on a LeetCode problem page!</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 4: Settings -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="settings-container">
+          <h3>Settings</h3>
+          <div class="form-group">
+            <label for="input-api-key">Gemini API Key</label>
+            <input type="password" id="input-api-key" placeholder="Enter your Gemini API Key">
+            <div class="help-text">
+              Don't have a key? Get one for free at <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer">Google AI Studio</a>.
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="select-model">AI Coach Model</label>
+            <select id="select-model">
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash (Fast, default)</option>
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro (Comprehensive)</option>
+              <option value="gemini-1.5-flash">Gemini 1.5 Flash (Legacy)</option>
+            </select>
+          </div>
+
+          <button id="btn-save-settings" class="btn primary-action">Save Settings</button>
+          <div id="settings-status" class="status-msg hide">Settings saved successfully!</div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
