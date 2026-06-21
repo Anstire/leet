@@ -104,6 +104,18 @@
     });
   }
 
+  const getFallbackCodeFromDom = () => {
+    try {
+      const lines = document.querySelectorAll('.view-line');
+      if (lines && lines.length > 0) {
+        return Array.from(lines).map(line => line.textContent || '').join('\n');
+      }
+    } catch (err) {
+      console.error("LeetCode Companion: Fallback code extraction failed", err);
+    }
+    return "";
+  };
+
   // Message listener from popup.js
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === 'GET_PROBLEM_DETAILS') {
@@ -113,9 +125,16 @@
       const description = getProblemDescription();
       const url = window.location.href;
 
+      let responded = false;
+      let timeoutId;
+
       // Request code from MAIN world (content-main.js)
       const handleResponse = (e) => {
+        if (responded) return;
+        responded = true;
+        clearTimeout(timeoutId);
         document.removeEventListener('LEETCODE_RESPONSE_CODE', handleResponse);
+        
         sendResponse({
           success: true,
           title,
@@ -123,11 +142,29 @@
           tags,
           description,
           url,
-          code: e.detail.code
+          code: e.detail.code || getFallbackCodeFromDom()
         });
       };
 
       document.addEventListener('LEETCODE_RESPONSE_CODE', handleResponse);
+      
+      // Fallback timeout: if main world script doesn't respond in 300ms, fallback to DOM scraping
+      timeoutId = setTimeout(() => {
+        if (responded) return;
+        responded = true;
+        document.removeEventListener('LEETCODE_RESPONSE_CODE', handleResponse);
+        
+        sendResponse({
+          success: true,
+          title,
+          difficulty,
+          tags,
+          description,
+          url,
+          code: getFallbackCodeFromDom()
+        });
+      }, 300);
+
       document.dispatchEvent(new CustomEvent('LEETCODE_REQUEST_CODE'));
 
       return true; // Keep message channel open for async response
