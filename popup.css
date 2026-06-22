@@ -528,6 +528,39 @@ body {
   font-size: inherit;
 }
 
+/* Markdown inner element styling inside assistant messages */
+.chat-message.assistant .message-content h1 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 10px 0 6px 0;
+}
+.chat-message.assistant .message-content h2 {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 8px 0 4px 0;
+}
+.chat-message.assistant .message-content h3 {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 6px 0 2px 0;
+}
+.chat-message.assistant .message-content ul {
+  padding-left: 18px;
+  margin: 6px 0;
+}
+.chat-message.assistant .message-content li {
+  margin: 3px 0;
+}
+.chat-message.assistant .message-content blockquote {
+  border-left: 3px solid var(--accent-color);
+  padding: 4px 0 4px 8px;
+  color: var(--text-secondary);
+  margin: 6px 0;
+  font-style: italic;
+  background-color: rgba(79, 70, 229, 0.05);
+  border-radius: 0 var(--border-radius-sm) var(--border-radius-sm) 0;
+}
+
 /* Typing / Loading state indicator */
 .typing-indicator {
   display: flex;

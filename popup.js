@@ -697,8 +697,17 @@ function scrollToBottom() {
 }
 
 function formatMarkdown(text) {
+  if (!text) return '';
+  
+  let tempText = text;
+  // If there's an odd number of ``` occurrences, append a closing ``` to allow streaming code block syntax
+  const codeBlockCount = (tempText.match(/```/g) || []).length;
+  if (codeBlockCount % 2 !== 0) {
+    tempText += '\n```';
+  }
+  
   // Simple markdown parser to avoid external lib dependencies
-  let html = text
+  let html = tempText
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
@@ -714,17 +723,38 @@ function formatMarkdown(text) {
   // Bold (**text**)
   html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   
-  // Bullets
-  html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+  // Italic (*text* or _text_)
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/\b_([^_]+)_\b/g, '<em>$1</em>');
   
-  // Convert newlines (excluding those in pre blocks)
+  // Headers
+  html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+  
+  // Blockquotes
+  html = html.replace(/^\s*>\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+  
+  // Lists
+  html = html.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+  // Wrap consecutive <li> elements in <ul>
+  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+  html = html.replace(/<\/ul>\s*<ul>/g, '');
+  
+  // Convert newlines (excluding those in pre blocks) to <br>
   const parts = html.split(/(<pre>[\s\S]*?<\/pre>)/);
   for (let i = 0; i < parts.length; i++) {
     if (!parts[i].startsWith('<pre>')) {
       parts[i] = parts[i].replace(/\n/g, '<br>');
     }
   }
-  return parts.join('');
+  html = parts.join('');
+  
+  // Clean up excessive <br> spacing around blocks
+  html = html.replace(/(<\/(h1|h2|h3|ul|li|pre|blockquote)>)<br>/gi, '$1');
+  html = html.replace(/<br>(<(h1|h2|h3|ul|li|pre|blockquote))/gi, '$1');
+  
+  return html;
 }
 
 // 6. History List Implementation
