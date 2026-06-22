@@ -107,7 +107,7 @@ function setupTabs() {
 }
 
 // 2. Data Refreshing and Scraper Integration
-async function refreshData() {
+async function refreshData(loadFromStorage = true) {
   return new Promise((resolve) => {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       if (!tabs[0] || !tabs[0].url || !tabs[0].url.includes('/problems/')) {
@@ -163,13 +163,33 @@ async function refreshData() {
           elements.problemTags.appendChild(badge);
         });
         
-        // Load saved notes for this problem if they exist
-        const storageKey = `notes_${problemDetails.url}`;
-        const savedData = await chrome.storage.local.get(storageKey);
-        if (savedData[storageKey]) {
-          elements.notesEditor.value = savedData[storageKey].notes || "";
-          elements.selectTimeComplexity.value = savedData[storageKey].timeComplexity || "";
-          elements.selectSpaceComplexity.value = savedData[storageKey].spaceComplexity || "";
+        if (loadFromStorage) {
+          // Load draft or saved notes for this problem if they exist
+          const storageKey = `notes_${problemDetails.url}`;
+          const draftKey = `draft_${problemDetails.url}`;
+          const storedData = await chrome.storage.local.get([storageKey, draftKey]);
+          const draft = storedData[draftKey];
+          const saved = storedData[storageKey];
+          
+          if (draft) {
+            elements.notesEditor.value = draft.notes || "";
+            elements.selectTimeComplexity.value = draft.timeComplexity || "";
+            elements.selectSpaceComplexity.value = draft.spaceComplexity || "";
+            chatHistory = draft.chatHistory || [];
+          } else if (saved) {
+            elements.notesEditor.value = saved.notes || "";
+            elements.selectTimeComplexity.value = saved.timeComplexity || "";
+            elements.selectSpaceComplexity.value = saved.spaceComplexity || "";
+            chatHistory = saved.chatHistory || [];
+          } else {
+            elements.notesEditor.value = "";
+            elements.selectTimeComplexity.value = "";
+            elements.selectSpaceComplexity.value = "";
+            chatHistory = [];
+          }
+          
+          // Re-render chat messages from chatHistory
+          renderChatHistory();
         }
         
         // Sync and start the timer
@@ -394,6 +414,30 @@ ${problemDetails.code || '// Paste your solution here if empty'}
     a.click();
     URL.revokeObjectURL(downloadUrl);
   });
+
+  // Auto-save listeners for session drafts
+  elements.notesEditor.addEventListener('input', () => {
+    if (problemDetails) saveDraft(problemDetails.url);
+  });
+  
+  elements.selectTimeComplexity.addEventListener('change', () => {
+    if (problemDetails) saveDraft(problemDetails.url);
+  });
+  
+  elements.selectSpaceComplexity.addEventListener('change', () => {
+    if (problemDetails) saveDraft(problemDetails.url);
+  });
+}
+
+async function saveDraft(url) {
+  if (!url) return;
+  const draftData = {
+    notes: elements.notesEditor.value,
+    timeComplexity: elements.selectTimeComplexity.value,
+    spaceComplexity: elements.selectSpaceComplexity.value,
+    chatHistory: chatHistory
+  };
+  await chrome.storage.local.set({ [`draft_${url}`]: draftData });
 }
 
 function guessLanguage(code) {
@@ -464,13 +508,16 @@ async function sendUserChatMessage() {
     parts: [{ text: text }]
   });
   
+  // Save draft for this user message
+  if (problemDetails) saveDraft(problemDetails.url);
+  
   // Show typing indicator
   const typingIndicator = appendTypingIndicator();
   scrollToBottom();
   
   try {
-    // Refresh latest editor code from LeetCode right before prompting
-    await refreshData();
+    // Refresh latest editor code from LeetCode right before prompting (but don't reload notes/chat from storage)
+    await refreshData(false);
     
     // Construct system prompt context
     const sysPrompt = `You are an expert software engineering interviewer and LeetCode coach. 
@@ -587,12 +634,32 @@ Respond concisely with clear Markdown formatting.`;
       parts: [{ text: fullReplyText }]
     });
     
+    // Save draft for this assistant response
+    if (problemDetails) saveDraft(problemDetails.url);
+    
   } catch (err) {
     console.error("AI Companion error:", err);
     typingIndicator.remove();
     appendChatMessage('assistant', `⚠️ Sorry, I encountered an error: ${err.message}. Please verify your API key and connection.`);
     scrollToBottom();
   }
+}
+
+function renderChatHistory() {
+  elements.chatMessagesContainer.innerHTML = '';
+  
+  if (chatHistory.length === 0) {
+    appendChatMessage('assistant', "Hello! I am your LeetCode AI Companion. How can I help you with today's problem? Click one of the quick suggestions above or write a message.");
+    return;
+  }
+  
+  chatHistory.forEach(msg => {
+    const sender = msg.role === 'user' ? 'user' : 'assistant';
+    const text = msg.parts[0].text;
+    appendChatMessage(sender, text);
+  });
+  
+  scrollToBottom();
 }
 
 function appendChatMessage(sender, text) {
@@ -738,9 +805,10 @@ async function loadHistoryList() {
 }
 
 async function deleteHistoryItem(url) {
-  // Remove notes key
+  // Remove notes, timers, and drafts keys
   await chrome.storage.local.remove(`notes_${url}`);
   await chrome.storage.local.remove(`timer_${url}`);
+  await chrome.storage.local.remove(`draft_${url}`);
   
   // Remove from index
   const historyData = await chrome.storage.local.get('saved_problems_list');
@@ -755,10 +823,11 @@ function setupHistory() {
       const historyData = await chrome.storage.local.get('saved_problems_list');
       const savedList = historyData['saved_problems_list'] || [];
       
-      // Remove all notes & timers keys
+      // Remove all notes, drafts & timers keys
       for (const item of savedList) {
         await chrome.storage.local.remove(`notes_${item.url}`);
         await chrome.storage.local.remove(`timer_${item.url}`);
+        await chrome.storage.local.remove(`draft_${item.url}`);
       }
       
       // Clear index
