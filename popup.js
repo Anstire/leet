@@ -382,7 +382,7 @@ ${problemDetails.code || '// Paste your solution here if empty'}
     const slug = problemDetails.title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
-      .replace(/(^_+|+$)/g, '');
+      .replace(/(^_+|_+$)/g, '');
     const filename = `leetcode_${slug}.md`;
     
     // Initiate client-side download
@@ -501,7 +501,7 @@ Respond concisely with clear Markdown formatting.`;
       }
     };
     
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -514,20 +514,77 @@ Respond concisely with clear Markdown formatting.`;
       throw new Error(`API Error (${response.status}): ${errText}`);
     }
     
-    const result = await response.json();
-    const replyText = result.candidates[0].content.parts[0].text;
-    
     // Remove indicator
     typingIndicator.remove();
     
-    // Render assistant response
-    appendChatMessage('assistant', replyText);
+    // Create streaming assistant message bubble
+    const wrapper = document.createElement('div');
+    wrapper.className = 'chat-message assistant';
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    wrapper.appendChild(messageContent);
+    elements.chatMessagesContainer.appendChild(wrapper);
     scrollToBottom();
+    
+    let fullReplyText = '';
+    
+    if (response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        
+        // Process SSE lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop(); // keep last incomplete line
+        
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) continue;
+          
+          if (trimmed.startsWith('data: ')) {
+            const jsonStr = trimmed.slice(6);
+            try {
+              const parsed = JSON.parse(jsonStr);
+              const partText = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (partText) {
+                fullReplyText += partText;
+                messageContent.innerHTML = formatMarkdown(fullReplyText);
+                scrollToBottom();
+              }
+            } catch (e) {
+              // Ignore partial parsing errors since chunks might be combined later
+            }
+          }
+        }
+      }
+      
+      // Process any remaining data in the buffer
+      if (buffer.trim().startsWith('data: ')) {
+        const jsonStr = buffer.trim().slice(6);
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const partText = parsed.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (partText) {
+            fullReplyText += partText;
+            messageContent.innerHTML = formatMarkdown(fullReplyText);
+            scrollToBottom();
+          }
+        } catch (e) {}
+      }
+    } else {
+      throw new Error("Streaming not supported by browser connection");
+    }
     
     // Save to conversational memory
     chatHistory.push({
       role: 'model',
-      parts: [{ text: replyText }]
+      parts: [{ text: fullReplyText }]
     });
     
   } catch (err) {
